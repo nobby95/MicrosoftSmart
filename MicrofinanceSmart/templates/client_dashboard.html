@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Dashboard - Microfinance Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            background-color: #343a40;
+            min-height: calc(100vh - 56px);
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            border-left: 3px solid transparent;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid #667eea;
+        }
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid #667eea;
+        }
+        .sidebar .nav-link i {
+            margin-right: 10px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 0.75rem 1.25rem;
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.6rem;
+        }
+        .welcome-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('home') }}">Microfinance ML</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="#">Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('client_dashboard') }}">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('client_loans') }}">
+                                <i class="bi bi-cash-coin"></i> My Loans
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('apply_loan') }}">
+                                <i class="bi bi-plus-circle"></i> Apply for Loan
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('client_messages') }}">
+                                <i class="bi bi-envelope"></i> Messages
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Welcome Card -->
+                <div class="card welcome-card mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="card-title">Welcome, {{ current_user.first_name if current_user.first_name else current_user.username }}!</h3>
+                        <p class="card-text">This is your personal dashboard where you can manage your loans, payments, and messages.</p>
+                    </div>
+                </div>
+
+                <!-- Loan Summary & Actions -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">Your Loans</h5>
+                                <a href="{{ url_for('apply_loan') }}" class="btn btn-primary btn-sm">Apply for Loan</a>
+                            </div>
+                            <div class="card-body">
+                                {% if loans %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Amount</th>
+                                                <th>Term</th>
+                                                <th>Status</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for loan in loans %}
+                                            <tr>
+                                                <td>#{{ loan.id }}</td>
+                                                <td>${{ loan.amount }}</td>
+                                                <td>{{ loan.term_months }} months</td>
+                                                <td>
+                                                    <span class="badge status-badge 
+                                                        {% if loan.status == 'pending' %}bg-warning
+                                                        {% elif loan.status == 'approved' or loan.status == 'active' %}bg-success
+                                                        {% elif loan.status == 'rejected' %}bg-danger
+                                                        {% else %}bg-secondary{% endif %}">
+                                                        {{ loan.status|capitalize }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ url_for('client_loan_details', loan_id=loan.id) }}" class="btn btn-sm btn-outline-primary">Details</a>
+                                                    {% if loan.status == 'active' %}
+                                                    <a href="{{ url_for('make_payment', loan_id=loan.id) }}" class="btn btn-sm btn-success">Pay</a>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <div class="text-center py-4">
+                                    <p class="mb-3">You don't have any loans yet.</p>
+                                    <a href="{{ url_for('apply_loan') }}" class="btn btn-primary">Apply for your first loan</a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Recent Messages</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if messages %}
+                                <div class="list-group">
+                                    {% for message in messages[:3] %}
+                                    <div class="list-group-item list-group-item-action flex-column align-items-start">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ message.message_type|capitalize }}</h6>
+                                            <small>{{ message.send_time.strftime('%Y-%m-%d') }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ message.content|truncate(100) }}</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="text-center mt-3">
+                                    <a href="{{ url_for('client_messages') }}" class="btn btn-outline-primary btn-sm">View All Messages</a>
+                                </div>
+                                {% else %}
+                                <p class="text-center py-4">No messages to display</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Payments -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Recent Payments</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_payments %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Payment ID</th>
+                                        <th>Loan ID</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in recent_payments %}
+                                    <tr>
+                                        <td>#{{ payment.id }}</td>
+                                        <td>
+                                            <a href="{{ url_for('client_loan_details', loan_id=payment.loan_id) }}">#{{ payment.loan_id }}</a>
+                                        </td>
+                                        <td>${{ payment.amount }}</td>
+                                        <td>{{ payment.payment_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if payment.status == 'successful' %}bg-success
+                                                {% elif payment.status == 'pending' %}bg-warning
+                                                {% else %}bg-danger{% endif %}">
+                                                {{ payment.status|capitalize }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-center py-4">No payment history to display</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

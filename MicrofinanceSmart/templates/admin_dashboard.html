@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Microfinance Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            background-color: #343a40;
+            min-height: calc(100vh - 56px);
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            border-left: 3px solid transparent;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid #667eea;
+        }
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid #667eea;
+        }
+        .sidebar .nav-link i {
+            margin-right: 10px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .stats-icon {
+            font-size: 2rem;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .activity-item {
+            border-left: 2px solid #667eea;
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        .activity-item::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 0;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('home') }}">Microfinance ML</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="#">Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('admin_dashboard') }}">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_loans') }}">
+                                <i class="bi bi-cash-coin"></i> Loans
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_excel_files') }}">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> Excel Files
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_excel_upload') }}">
+                                <i class="bi bi-cloud-upload"></i> Upload Excel
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_send_message') }}">
+                                <i class="bi bi-chat-dots"></i> Send Message
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Admin Dashboard</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary">Print</button>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
+                            <i class="bi bi-calendar"></i> This Week
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Statistic Cards -->
+                <div class="row">
+                    <div class="col-md-3 mb-4">
+                        <div class="card stats-card h-100">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="stats-icon me-3">
+                                    <i class="bi bi-people"></i>
+                                </div>
+                                <div>
+                                    <h5 class="card-title mb-0">Users</h5>
+                                    <h3 class="mb-0">{{ total_users }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-4">
+                        <div class="card stats-card h-100">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="stats-icon me-3">
+                                    <i class="bi bi-cash"></i>
+                                </div>
+                                <div>
+                                    <h5 class="card-title mb-0">Loans</h5>
+                                    <h3 class="mb-0">{{ total_loans }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-4">
+                        <div class="card stats-card h-100">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="stats-icon me-3">
+                                    <i class="bi bi-hourglass-split"></i>
+                                </div>
+                                <div>
+                                    <h5 class="card-title mb-0">Pending</h5>
+                                    <h3 class="mb-0">{{ pending_loans }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-4">
+                        <div class="card stats-card h-100">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="stats-icon me-3">
+                                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                                </div>
+                                <div>
+                                    <h5 class="card-title mb-0">Excel Files</h5>
+                                    <h3 class="mb-0">{{ total_excel_files }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Loan Statistics</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="loanChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Loan Status Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="statusPieChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Metrics -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Financial Metrics</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Metric</th>
+                                                <th>Value</th>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for metric in financial_metrics %}
+                                            <tr>
+                                                <td>{{ metric.name }}</td>
+                                                <td>
+                                                    {% if metric.metric_type == 'revenue' or metric.metric_type == 'profit' %}
+                                                        <span class="text-success">${{ metric.value|round(2) }}</span>
+                                                    {% elif metric.metric_type == 'expense' %}
+                                                        <span class="text-danger">${{ metric.value|round(2) }}</span>
+                                                    {% else %}
+                                                        {{ metric.value|round(2) }}%
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ metric.date.strftime('%Y-%m-%d') }}</td>
+                                                <td>
+                                                    <span class="badge {% if metric.metric_type == 'revenue' %}bg-success{% elif metric.metric_type == 'expense' %}bg-danger{% elif metric.metric_type == 'profit' %}bg-primary{% else %}bg-info{% endif %}">
+                                                        {{ metric.metric_type|capitalize }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {% else %}
+                                            <tr>
+                                                <td colspan="4" class="text-center">No financial metrics available</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Recent Activities</h5>
+                            </div>
+                            <div class="card-body">
+                                {% for activity in recent_activities %}
+                                <div class="activity-item">
+                                    <h6 class="mb-1">{{ activity.activity_type|replace('_', ' ')|capitalize }}</h6>
+                                    <p class="mb-0 small text-muted">
+                                        User #{{ activity.user_id }} - {{ activity.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                                    </p>
+                                    <p class="mb-0 small">
+                                        {% if activity.details %}
+                                            {% for key, value in activity.details.items() %}
+                                                <span class="text-muted">{{ key|replace('_', ' ')|capitalize }}:</span> {{ value }}{% if not loop.last %}, {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            No additional details
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                {% else %}
+                                <p class="text-center">No recent activities</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script>
+        // Line chart for loan statistics
+        const loanCtx = document.getElementById('loanChart').getContext('2d');
+        const loanChart = new Chart(loanCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Loan Applications',
+                    data: [65, 59, 80, 81, 56, 55],
+                    borderColor: '#667eea',
+                    tension: 0.1,
+                    fill: false
+                }, {
+                    label: 'Approvals',
+                    data: [28, 48, 40, 19, 86, 27],
+                    borderColor: '#1cc88a',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Pie chart for loan status distribution
+        const statusCtx = document.getElementById('statusPieChart').getContext('2d');
+        const statusPieChart = new Chart(statusCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Active', 'Pending', 'Completed', 'Rejected'],
+                datasets: [{
+                    data: [{{ active_loans }}, {{ pending_loans }}, {{ total_loans - active_loans - pending_loans }}, 5],
+                    backgroundColor: ['#1cc88a', '#f6c23e', '#36b9cc', '#e74a3b']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    </script>
+</body>
+</html>
